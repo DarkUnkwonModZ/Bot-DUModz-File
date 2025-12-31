@@ -18,7 +18,7 @@ WEBSITE_URL = "https://darkunkwonmodz.blogspot.com"
 
 # Premium File Database
 FILES_DB = {
-    "liteapk-dialog-box-dumodz": ["liteapk-dialog-box.zip", "LiteAPK Dialog Box Pro"],
+    "liteapk_dialog_box_dumodz": ["liteapk-dialog-box.zip", "LiteAPK Dialog Box Pro"],
     "pubg-mod-v1": ["pubg_mod.zip", "PUBG Mobile VIP Mod"],
     "netflix-premium": ["netflix_mod.apk", "Netflix Premium Unlocked"]
 }
