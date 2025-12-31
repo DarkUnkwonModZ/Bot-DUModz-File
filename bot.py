@@ -3,145 +3,150 @@ from telebot import types
 import os
 import time
 
-# --- SECURE CONFIGURATION ---
+# --- SECURE CONFIGURATION (Admin Panel) ---
 TOKEN = os.getenv('BOT_TOKEN')
+ADMIN_ID = 8504263842  # Your Chat ID: Dark Unknown
+
 bot = telebot.TeleBot(TOKEN, parse_mode="HTML")
 
-# Branding Info
+# Branding & Links
 BRAND_NAME = "Dark Unkwon ModZ"
 LOGO_URL = "https://raw.githubusercontent.com/DarkUnkwonModZ/Blogger-DarkUnkownModZ-Appinfo/refs/heads/main/IMG/dumodz-logo-final.png"
-CHANNEL_ID = "@DarkUnkwonModZ"
-CHANNEL_URL = "https://t.me/DarkUnkwonModZ"
+REQUIRED_CHANNEL = "@DemoTestDUModz" # Channel ID for verification
+CHANNEL_URL = "https://t.me/DemoTestDUModz"
 WEBSITE_URL = "https://darkunkwonmodz.blogspot.com"
 
-# File Database (Command: [File Name, Display Name])
-FILES = {
+# Premium File Database
+FILES_DB = {
     "liteapk-dialog-box-dumodz": ["liteapk-dialog-box.zip", "LiteAPK Dialog Box Pro"],
-    "pubg-mod-v1": ["pubg_mod.zip", "PUBG VIP Mod Menu"],
+    "pubg-mod-v1": ["pubg_mod.zip", "PUBG Mobile VIP Mod"],
     "netflix-premium": ["netflix_mod.apk", "Netflix Premium Unlocked"]
 }
 
-# --- MIDDLEWARE: SUBSCRIPTION CHECK ---
-def is_subscribed(user_id):
+# --- ADVANCED VERIFICATION SYSTEM ---
+def is_member(user_id):
+    """Checks if the user is a member of the required channel."""
     try:
-        status = bot.get_chat_member(CHANNEL_ID, user_id).status
-        if status in ['member', 'administrator', 'creator']:
+        member = bot.get_chat_member(REQUIRED_CHANNEL, user_id)
+        if member.status in ['member', 'administrator', 'creator']:
             return True
         return False
-    except:
+    except Exception as e:
+        # If bot is not admin in channel, this will trigger
+        print(f"Verification Error: {e}")
         return False
 
-# --- UI COMPONENTS ---
-def get_main_keyboard(verified=False):
+# --- UI MARKUPS ---
+def welcome_markup(verified=False):
     markup = types.InlineKeyboardMarkup(row_width=2)
-    btn_channel = types.InlineKeyboardButton("📢 Telegram Channel", url=CHANNEL_URL)
-    btn_web = types.InlineKeyboardButton("🌐 Official Website", url=WEBSITE_URL)
+    btn_channel = types.InlineKeyboardButton("📢 Join Channel", url=CHANNEL_URL)
+    btn_web = types.InlineKeyboardButton("🌐 Visit Website", url=WEBSITE_URL)
     
     if not verified:
-        btn_verify = types.InlineKeyboardButton("🔄 Verify Membership", callback_data="verify_sub")
+        btn_verify = types.InlineKeyboardButton("🔄 Verify Membership", callback_data="check_sub")
         markup.add(btn_channel, btn_web)
         markup.add(btn_verify)
     else:
         markup.add(btn_channel, btn_web)
     return markup
 
-# --- HANDLERS ---
+# --- COMMAND HANDLERS ---
 
 @bot.message_handler(commands=['start'])
-def welcome_screen(message):
-    name = message.from_user.first_name
-    welcome_text = (
-        f"<b>Welcome to {BRAND_NAME} 🛡️</b>\n"
-        "━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"Hello <b>{name}</b>, your premium destination for exclusive "
-        "mod applications, scripts, and professional tools.\n\n"
-        "✨ <b>System Status:</b> <code>Ready & Secure</code>\n"
-        "💎 <b>Access:</b> <code>Premium User</code>\n"
-        "━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        "⚠️ <i>Membership verification is required to unlock our file repository.</i>"
+def start_handler(message):
+    user_name = message.from_user.first_name
+    verified = is_member(message.from_user.id)
+    
+    caption = (
+        f"<b>Welcome to {BRAND_NAME} System 🛡️</b>\n"
+        f"━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"Hello <b>{user_name}</b>, access our cloud database for premium "
+        "mod applications and professional scripts.\n\n"
+        f"👤 <b>User:</b> <code>{user_name}</code>\n"
+        f"🆔 <b>ID:</b> <code>{message.from_user.id}</code>\n"
+        f"💎 <b>Status:</b> {'<code>Verified ✅</code>' if verified else '<code>Unverified ❌</code>'}\n"
+        f"━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "⚠️ <i>You must join our official channel to unlock the file repository.</i>"
     )
     
     try:
-        bot.send_photo(
-            message.chat.id, 
-            LOGO_URL, 
-            caption=welcome_text, 
-            reply_markup=get_main_keyboard(is_subscribed(message.from_user.id))
-        )
+        bot.send_photo(message.chat.id, LOGO_URL, caption=caption, reply_markup=welcome_markup(verified))
     except:
-        bot.send_message(message.chat.id, welcome_text, reply_markup=get_main_keyboard(is_subscribed(message.from_user.id)))
+        bot.send_message(message.chat.id, caption, reply_markup=welcome_markup(verified))
 
 @bot.message_handler(commands=['commands', 'help'])
 def list_files(message):
-    if not is_subscribed(message.from_user.id):
-        return bot.send_message(message.chat.id, "❌ <b>Access Denied!</b>\nPlease join our channel first to see available commands.", reply_markup=get_subscription_only_markup())
+    if not is_member(message.from_user.id):
+        return bot.send_message(message.chat.id, "❌ <b>Access Denied!</b>\nPlease join the channel and click 'Verify' to unlock commands.", 
+                                reply_markup=welcome_markup(False))
 
-    text = (
-        "🛠 <b>Premium File Repository</b>\n"
-        "━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-    )
-    for cmd, data in FILES.items():
-        text += f"🔹 <b>{data[1]}</b>\n┗ <code>/{cmd}</code>\n\n"
+    text = "🛠 <b>Available Premium Commands:</b>\n━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+    for cmd, info in FILES_DB.items():
+        text += f"🔹 <b>{info[1]}</b>\n┗ <code>/{cmd}</code>\n\n"
     
-    text += "━━━━━━━━━━━━━━━━━━━━━━━━\n<i>Tap a command to request the file.</i>"
+    text += "━━━━━━━━━━━━━━━━━━━━━━━━\n<i>Tap a command to download the file.</i>"
     bot.send_message(message.chat.id, text)
 
 @bot.message_handler(func=lambda m: m.text.startswith('/'))
-def handle_file_requests(message):
+def handle_requests(message):
     cmd = message.text[1:].strip().lower()
     
-    if cmd in FILES:
-        if not is_subscribed(message.from_user.id):
-            return bot.send_message(message.chat.id, "❌ <b>Membership Required!</b>\nJoin our official channel to download this file.", reply_markup=get_subscription_only_markup())
+    if cmd in FILES_DB:
+        if not is_member(message.from_user.id):
+            return bot.send_message(message.chat.id, "❌ <b>Verification Required!</b>\nJoin our channel to download this file.", 
+                                    reply_markup=welcome_markup(False))
 
-        # Professional Animation
-        status_msg = bot.send_message(message.chat.id, "🔍 <b>Verifying Request...</b>")
+        # Premium Search Animation
+        status = bot.send_message(message.chat.id, "🔍 <b>Authenticating Request...</b>")
         time.sleep(1)
-        bot.edit_message_text("⚡ <b>Accessing Secure Database...</b>", message.chat.id, status_msg.message_id)
+        bot.edit_message_text("⚡ <b>Accessing Secure Server...</b>", message.chat.id, status.message_id)
         time.sleep(0.8)
-        bot.edit_message_text("📤 <b>Sending Encrypted File...</b>", message.chat.id, status_msg.message_id)
+        bot.edit_message_text("📤 <b>Sending Premium File...</b>", message.chat.id, status.message_id)
 
-        file_info = FILES[cmd]
-        if os.path.exists(file_info[0]):
+        file_info = FILES_DB[cmd]
+        file_path = file_info[0]
+        
+        if os.path.exists(file_path):
             try:
                 bot.send_chat_action(message.chat.id, 'upload_document')
-                with open(file_info[0], 'rb') as f:
+                with open(file_path, 'rb') as f:
                     bot.send_document(
                         message.chat.id, f,
-                        caption=f"✅ <b>File:</b> {file_info[1]}\n🛡 <b>Security:</b> Virus-Free\n━━━━━━━━━━━━━━━━━━━━\n👤 <i>Requested by: {message.from_user.first_name}</i>",
+                        caption=f"✅ <b>File:</b> {file_info[1]}\n🛡 <b>Security:</b> Scanned & Safe\n━━━━━━━━━━━━━━━━━━━━\n👤 <i>Requested by: {message.from_user.first_name}</i>",
                         reply_to_message_id=message.message_id
                     )
-                bot.delete_message(message.chat.id, status_msg.message_id)
+                bot.delete_message(message.chat.id, status.message_id)
             except Exception as e:
-                bot.edit_message_text(f"❌ <b>Transfer Error:</b> {str(e)}", message.chat.id, status_msg.message_id)
+                bot.edit_message_text(f"❌ <b>Error:</b> Could not send file. ({e})", message.chat.id, status.message_id)
         else:
             bot.edit_message_text(
-                "🚧 <b>System Maintenance</b>\n━━━━━━━━━━━━━━━━━━━━\n"
-                "This file is currently being updated to the latest version. "
-                "It will be available again shortly. Thank you for your patience!", 
-                message.chat.id, status_msg.message_id
+                "🚧 <b>File Under Maintenance!</b>\n━━━━━━━━━━━━━━━━━━━━\n"
+                "The requested file is currently being updated. "
+                "It will be available again shortly in the next cloud sync.", 
+                message.chat.id, status.message_id
             )
 
-# --- CALLBACKS ---
+# --- CALLBACK HANDLER ---
 
-@bot.callback_query_handler(func=lambda call: call.data == "verify_sub")
-def verify_user(call):
-    if is_subscribed(call.from_user.id):
-        bot.answer_callback_query(call.id, "✅ Verified! Access Granted.", show_alert=True)
+@bot.callback_query_handler(func=lambda call: call.data == "check_sub")
+def verify_callback(call):
+    if is_member(call.from_user.id):
+        bot.answer_callback_query(call.id, "✅ Identity Verified!", show_alert=True)
         bot.edit_message_caption(
-            "✅ <b>Verification Success!</b>\n\nYour premium access has been unlocked. Use /commands to browse our files.",
+            "✅ <b>Verification Success!</b>\n\nAccess has been granted. You can now use /commands to browse our premium repository.",
             call.message.chat.id, call.message.message_id,
-            reply_markup=get_main_keyboard(True)
+            reply_markup=welcome_markup(True)
         )
     else:
-        bot.answer_callback_query(call.id, "❌ You haven't joined yet!", show_alert=True)
+        bot.answer_callback_query(call.id, "❌ You have not joined @DemoTestDUModz yet!", show_alert=True)
 
-def get_subscription_only_markup():
-    markup = types.InlineKeyboardMarkup()
-    markup.add(types.InlineKeyboardButton("📢 Join Dark Unkwon ModZ", url=CHANNEL_URL))
-    return markup
+# --- ADMIN FEATURES ---
+@bot.message_handler(commands=['stats'])
+def admin_stats(message):
+    if message.from_user.id == ADMIN_ID:
+        bot.reply_to(message, "📊 <b>Admin Dashboard:</b>\nSystem is running smoothly via GitHub Actions.")
 
 # --- RUN BOT ---
 if __name__ == "__main__":
-    print(f">>> {BRAND_NAME} Bot is Active...")
-    bot.infinity_polling()
+    print(">>> Dark Unkwon ModZ Bot is Online...")
+    bot.infinity_polling(timeout=10, long_polling_timeout=5)
